@@ -7,7 +7,7 @@ const express               = require('express'),
       passportLocalMongoose = require('passport-local-mongoose');
 
 // Setup user model
-const User = require('./models/user');
+const User       = require('./models/user');
 
 // setup view engine
 app.set('view engine', 'ejs');
@@ -29,20 +29,18 @@ app.use(require('express-session') ({
 app.use(passport.initialize());
 app.use(passport.session());
 
+
+
 // passport serialize and de-serialize
+passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
 
 // setup routes
 app.get('/register', function(req, res){
-    res.render('login');
+    res.render('register');
 });
-
-app.get('/profile', function(req, res){
-    res.render('profile');
-});
-
 
 app.post('/register', function(req, res){
     const username = req.body.username,
@@ -54,10 +52,36 @@ app.post('/register', function(req, res){
             return res.render('login');
         }
         passport.authenticate("local")(req, res, function(){
-            res.redirect('/profile');
+            res.redirect('/login');
         });
     });
 });
+
+app.get('/login', function(req, res){
+    res.render('login');
+});
+
+app.post('/login', passport.authenticate("local", {
+    successRedirect: '/profile',
+    failureRedirect: 'login'
+}),function(req, res){
+});
+
+app.get('/logout', function(req, res){
+    req.logout();
+    res.redirect("/login");
+});
+
+app.get('/profile', isLoggedIn, function(req, res){
+    res.render('profile');
+});
+
+function isLoggedIn(req, res, next) {
+    if(req.isAuthenticated()) {
+        return next();
+    }
+    res.redirect("/login");
+}
 
 // setup server
 const PORT = process.env.PORT || 3000 ; 
